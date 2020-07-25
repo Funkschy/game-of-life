@@ -1,0 +1,225 @@
+import "io";
+import "sdl";
+
+extern def calloc(n: i32, size: i32): *void;
+
+let width = 800;
+let height = 600;
+let cell_size = 10;
+
+type Point struct {
+    x: i32,
+    y: i32
+}
+
+def point(x: i32, y: i32): Point {
+    return Point { x: x, y: y };
+}
+
+type Cell struct {
+    alive: bool
+}
+
+type Game struct {
+    num_horizontal: i32,
+    num_vertical: i32,
+    count: i32,
+    current: *Cell,
+    next: *Cell
+}
+
+def game(): Game {
+    let num_h = width / cell_size;
+    let num_v = height / cell_size;
+    let count = num_h * num_v;
+
+    let current = calloc(count, sizeof Cell) as *Cell;
+    let next = calloc(count, sizeof Cell) as *Cell;
+
+    return Game {
+        num_horizontal: num_h,
+        num_vertical: num_v,
+        count: count,
+        current: current,
+        next: next
+    };
+}
+
+def (g: *Game) tick() {
+    for let i = 0; i < g.num_horizontal; i += 1 {
+        for let j = 0; j < g.num_vertical; j += 1 {
+            let p = point(i, j);
+            g.set_next_alive(p, false);
+
+            let neighbours = g.count_alive_neighbours(p);
+            if g.get(p).alive {
+                if neighbours < 2 {
+                    g.set_next_alive(p, false);
+                } else {
+                    g.set_next_alive(p, neighbours <= 3);
+                }
+            } else if neighbours == 3 {
+                g.set_next_alive(p, true);
+            }
+        }
+    }
+
+    let temp = g.current;
+    g.current = g.next;
+    g.next = temp;
+}
+
+def (g: *Game) correct(p: Point): Point {
+    if p.x < 0 {
+        p.x = g.num_horizontal - 1;
+    } else if p.x >= g.num_horizontal {
+        p.x = 0;
+    }
+
+    if p.y < 0 {
+        p.y = g.num_vertical - 1;
+    } else if p.y >= g.num_vertical {
+        p.y = 0;
+    }
+
+    return p;
+}
+
+def (g: *Game) set_next_alive(p: Point, alive: bool) {
+    let idx = p.y * g.num_horizontal + p.x;
+    (g.next + idx).alive = alive;
+}
+
+def (g: *Game) get(p: Point): *Cell {
+    let idx = p.y * g.num_horizontal + p.x;
+    return g.current + idx;
+}
+
+def (g: *Game) count_alive_neighbours(p: Point): i32 {
+    let neighbour = p;
+    let num_alive = 0;
+
+    for let x = 0; x < 3; x += 1 {
+        for let y = 0; y < 3; y += 1 {
+            neighbour = g.correct(point(p.x + 1 - x, p.y + 1 - y));
+            if (neighbour.x != p.x || neighbour.y != p.y) && g.get(neighbour).alive {
+                num_alive += 1;
+            }
+        }
+    }
+
+    return num_alive;
+}
+
+def (g: *Game) free() {
+    delete g.current;
+    delete g.next;
+}
+
+def render_game(renderer: *sdl.Renderer, g: *Game) {
+    renderer.set_draw_color(255, 255, 255, 255);
+    for let i = 0; i < g.num_horizontal; i += 1 {
+        for let j = 0; j < g.num_vertical; j += 1 {
+            if g.get(point(i, j)).alive {
+                let rect = sdl.rect(i * cell_size, j * cell_size, cell_size, cell_size);
+                renderer.fill_rect(&rect);
+            }
+        }
+    }
+    renderer.set_draw_color(0, 0, 0, 255);
+}
+
+def main(): i32 {
+    if sdl.init(sdl.init_video()) < 0 {
+        io.printf("Could not init SDL: %s\n", sdl.get_error());
+        return -1;
+    }
+    defer sdl.quit();
+
+    let window = sdl.create_window(
+        "Game of Life",
+        sdl.window_centered(), sdl.window_centered(),
+        width, height,
+        sdl.window_shown()
+    );
+
+    if window == null {
+        io.printf("Could not init window: %s\n", sdl.get_error());
+        return -3;
+    }
+    defer window.destroy();
+
+    let renderer = sdl.create_renderer(window, -1, sdl.present_vsync());
+    defer renderer.destroy();
+    renderer.set_draw_color(0, 0, 0, 255);
+
+    let game = game();
+    defer game.free();
+
+    game.get(point(10, 10)).alive = true;
+    game.get(point(10, 11)).alive = true;
+    game.get(point(10, 12)).alive = true;
+    game.get(point(9, 12)).alive = true;
+    game.get(point(8, 11)).alive = true;
+
+    let e: sdl.Event = undefined;
+    let last: i64 = sdl.now();
+
+    let delta_sum: f64 = 0.0;
+    let paused = false;
+
+    let run = true;
+    while run {
+        let delta = sdl.delta(last);
+        last = sdl.now();
+        delta_sum += delta;
+
+        while e.poll() != 0 {
+            if e.kind == sdl.EventKind.Quit {
+                run = false;
+                break;
+            }
+
+            if e.kind == sdl.EventKind.KeyDown {
+                let key_event = e.as_key_event();
+
+                // espace
+                if key_event.scan_code == 41 {
+                    run = false;
+                    break;
+                }
+
+                // space
+                if key_event.scan_code == 44 {
+                    if !paused {
+                        window.set_title("Game of Life (Paused)");
+                    } else {
+                        window.set_title("Game of Life");
+                    }
+                    paused = !paused;
+                    break;
+                }
+            }
+
+            if e.kind == sdl.EventKind.MouseButtonDown && paused {
+                let mouse_event = e.as_mouse_button_event();
+                let p = point(mouse_event.x / cell_size, mouse_event.y / cell_size);
+
+                game.get(p).alive = mouse_event.is_left_click();
+            }
+        }
+
+        renderer.clear();
+        render_game(renderer, &game);
+        renderer.present();
+
+        if paused || delta_sum < 100.0 {
+            continue;
+        }
+
+        game.tick();
+        delta_sum = 0.0;
+    }
+
+    return 0;
+}
