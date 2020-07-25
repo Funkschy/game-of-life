@@ -53,11 +53,7 @@ def (g: *Game) tick() {
 
             let neighbours = g.count_alive_neighbours(p);
             if g.get(p).alive {
-                if neighbours < 2 {
-                    g.set_next_alive(p, false);
-                } else {
-                    g.set_next_alive(p, neighbours <= 3);
-                }
+                g.set_next_alive(p, neighbours == 2 || neighbours == 3);
             } else if neighbours == 3 {
                 g.set_next_alive(p, true);
             }
