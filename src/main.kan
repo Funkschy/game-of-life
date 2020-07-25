@@ -163,6 +163,8 @@ def main(): i32 {
 
     let delta_sum: f64 = 0.0;
     let paused = false;
+    let left_mouse_down = false;
+    let right_mouse_down = false;
 
     let run = true;
     while run {
@@ -197,11 +199,45 @@ def main(): i32 {
                 }
             }
 
-            if e.kind == sdl.EventKind.MouseButtonDown && paused {
-                let mouse_event = e.as_mouse_button_event();
-                let p = point(mouse_event.x / cell_size, mouse_event.y / cell_size);
+            if !paused {
+                continue;
+            }
 
-                game.get(p).alive = mouse_event.is_left_click();
+            if e.kind == sdl.EventKind.MouseButtonDown  {
+                let mouse_event = e.as_mouse_button_event();
+                if mouse_event.is_left() {
+                    left_mouse_down = true;
+                } else if mouse_event.is_right() {
+                    right_mouse_down = true;
+                }
+
+                let p = point(mouse_event.x / cell_size, mouse_event.y / cell_size);
+                game.get(p).alive = mouse_event.is_left();
+                continue;
+            }
+
+            if e.kind == sdl.EventKind.MouseButtonUp {
+                let mouse_event = e.as_mouse_button_event();
+                if mouse_event.is_left() {
+                    left_mouse_down = false;
+                } else if mouse_event.is_right() {
+                    right_mouse_down = false;
+                }
+
+                continue;
+            }
+
+            if e.kind == sdl.EventKind.MouseMotion {
+                let mouse_event = e.as_mouse_motion_event();
+                let p = point(mouse_event.x / cell_size, mouse_event.y / cell_size);
+                if left_mouse_down {
+                    game.get(p).alive = true;
+                }
+
+                if right_mouse_down {
+                    game.get(p).alive = false;
+                }
+                continue;
             }
         }
 

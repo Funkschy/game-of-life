@@ -227,12 +227,28 @@ def (e: *Event) as_mouse_button_event(): *MouseButtonEvent {
     return e as *MouseButtonEvent;
 }
 
-def (e: *MouseButtonEvent) is_left_click(): bool {
-    return e.kind == EventKind.MouseButtonDown && e.button == 1;
+def (e: *MouseButtonEvent) is_left(): bool {
+    return e.button == 1;
 }
 
-def (e: *MouseButtonEvent) is_right_click(): bool {
-    return e.kind == EventKind.MouseButtonDown && e.button == 3;
+def (e: *MouseButtonEvent) is_right(): bool {
+    return e.button == 3;
+}
+
+type MouseMotionEvent struct {
+    kind: EventKind,
+    timestamp: i32,
+    window_id: i32,
+    which: i32,
+    state: i32,
+    x: i32,
+    y: i32,
+    xrel: i32,
+    yrel: i32
+}
+
+def (e: *Event) as_mouse_motion_event(): *MouseMotionEvent {
+    return e as *MouseMotionEvent;
 }
 
 type JoyHatValue enum {
