@@ -17,5 +17,5 @@ $(BIN_NAME) : $(KANTAN_FILES)
 	fi ;
 	$(KANTAN) $(KANTAN_FILES) -o $(OBJ) -g ; \
 	LIBS=$$($(SDL_BUILD_DIR)/sdl2-config --static-libs); \
-	gcc $(OBJ) $$LIBS -lSDL -o $(BIN_NAME) ; \
+	gcc $(OBJ) $$LIBS -lSDL2 -o $(BIN_NAME) ; \
 	rm $(OBJ)
