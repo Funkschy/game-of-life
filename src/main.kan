@@ -1,7 +1,7 @@
 import "io";
 import "sdl";
 
-extern def calloc(n: i32, size: i32): *void;
+extern def calloc(n: usize, size: usize): *void;
 
 let width = 800;
 let height = 600;
@@ -33,8 +33,8 @@ def game(): Game {
     let num_v = height / cell_size;
     let count = num_h * num_v;
 
-    let current = calloc(count, sizeof Cell) as *Cell;
-    let next = calloc(count, sizeof Cell) as *Cell;
+    let current = calloc(count as usize, sizeof Cell) as *Cell;
+    let next = calloc(count as usize, sizeof Cell) as *Cell;
 
     return Game {
         num_horizontal: num_h,
