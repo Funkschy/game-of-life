@@ -4,7 +4,6 @@ Simple Implementation of [Conway's Game of Life](https://en.wikipedia.org/wiki/C
 Uses SDL2
 
 ## Getting started
-This uses the current master branch of Kantan, which does not yet have a release. If you want to compile this yourself, contact me for an up to date version.
 You need the dependencies for SDL2
 ```
 git clone --recursive https://github.com/Funkschy/game-of-life
